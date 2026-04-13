@@ -42,6 +42,10 @@ public class Neuron {
         this.prevNeurons = prevNeurons;
     }
 
+    public ArrayList<Neuron> getPrevNeurons(){
+        return prevNeurons;
+    }
+
     public void setActivation(double activation){
         this.Activation = activation;
     }
