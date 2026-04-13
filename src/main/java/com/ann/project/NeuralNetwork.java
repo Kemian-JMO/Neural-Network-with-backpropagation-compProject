@@ -29,10 +29,9 @@ public class NeuralNetwork{
     the output values are objects, as we don't know what the output will be at this point.
     this could maybe be Strings?
      */
-    private ArrayList<Objects> outputValues = new ArrayList<>();
+    private ArrayList<Object> outputValues = new ArrayList<>();
 
-
-    public NeuralNetwork(int seed, int[] hiddenLayers, ArrayList<Double[]> inputValues, ArrayList<Objects> outputValues ){
+    public NeuralNetwork(int seed, int[] hiddenLayers, ArrayList<Double[]> inputValues, ArrayList<Object> outputValues) {
         random = new Random(seed);
         this.hiddenLayers = hiddenLayers;
         this.inputValues = inputValues;
@@ -48,11 +47,11 @@ public class NeuralNetwork{
         /*
         This is the part where we set the prevNeurons of each neuron.
          */
-//        for(int i = 1; i < network.size(); i++){
-//            for(int j = 0; j < network.get(i).size(); j++){
-//                network.get(i).get(j).setPrevNeurons(network.get(i-1));
-//            }
-//        }
+        for (int i = 1; i < network.size(); i++) {
+            for (int j = 0; j < network.get(i).size(); j++) {
+                network.get(i).get(j).setPrevNeurons(network.get(i - 1));
+            }
+        }
 
         /*
         This is the part where we set the weights of each neuron.
@@ -68,9 +67,9 @@ public class NeuralNetwork{
     }
 
     private void createHiddenNeurons(){
-        for(int i = 0; i < hiddenLayers.length; i++){
+        for (int hiddenLayer : hiddenLayers) {
             ArrayList<Neuron> neurons = new ArrayList<>();
-            for (int j = 0; j < hiddenLayers[i]; j++) {
+            for (int j = 0; j < hiddenLayer; j++) {
                 Neuron neuron = new Neuron();
                 neurons.add(neuron);
             }
@@ -79,7 +78,6 @@ public class NeuralNetwork{
     }
 
     private void createInputNeurons(){
-
         for(int i = 0; i <= inputValues.get(0).length - 1; i++){
             Neuron neuron = new Neuron();
             inputNeurons.add(neuron);
