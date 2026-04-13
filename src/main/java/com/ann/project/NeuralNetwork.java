@@ -4,6 +4,11 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Random;
 
+/*
+We can write about how and why our neural network differs from the 4 graph types as the neural network looks a lot like a graph
+My initial thoughts are that we only need to know the previous nodes so it would be unnessesary to store references between all of them
+
+ */
 public class NeuralNetwork{
 
     private final Random random;

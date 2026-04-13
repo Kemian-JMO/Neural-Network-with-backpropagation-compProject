@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.Random;
 
 /*
+Look into Java streams
+ */
+/*
 This class is used to represent a neuron.
 The weight
  */
