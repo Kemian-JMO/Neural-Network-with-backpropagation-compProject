@@ -87,7 +87,6 @@ public class NeuralNetwork{
             Neuron neuron = new Neuron();
             inputNeurons.add(neuron);
         }
-
     }
 
     private void createOutputNeurons(){
@@ -125,5 +124,7 @@ public class NeuralNetwork{
         }
     }
 
+    private void feedForward(Neuron neuron){
 
+    }
 }
