@@ -17,13 +17,13 @@ public class Neuron {
     private ArrayList<Double> weight;
     private double bias;
     private ArrayList<Neuron> prevNeurons;
-    private double Activation;
+    private double activation;
 
     public Neuron(){
     }
 
     public void setWeight(ArrayList<Double> weight){
-        this.weight = new ArrayList<>();
+        this.weight = weight;
     }
 
     public ArrayList<Double> getWeight(){
@@ -47,7 +47,7 @@ public class Neuron {
     }
 
     public void setActivation(double activation){
-        this.Activation = activation;
+        this.activation = activation;
     }
 
 }
