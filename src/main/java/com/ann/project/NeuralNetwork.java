@@ -1,7 +1,5 @@
 package com.ann.project;
 
-import java.util.ArrayList;
-import java.util.Objects;
 import java.util.Random;
 
 /*
@@ -12,18 +10,18 @@ My initial thoughts are that we only need to know the previous nodes so it would
 public class NeuralNetwork{
 
     private final Random random;
-
-    private int[] hiddenLayers;
-    private ArrayList<Neuron> inputNeurons = new ArrayList<>();
-    private ArrayList<ArrayList<Neuron>> hiddenNeurons = new ArrayList<>();
-    private ArrayList<Neuron> outputNeurons = new ArrayList<>();
-    private ArrayList<ArrayList<Neuron>> network = new ArrayList<>();
+    private int numberOfLayers;
+    private int[] numHiddenLayers;
+    private Layer inputNeurons;
+    private Layer[] hiddenLayers;
+    private Layer outputLayer;
+    private Layer[] network;
 
 
     /*
     The input is the dataset with the arraylist being a list of every datapoint, the double array containing each element of the datapoint.
     */
-    private ArrayList<Double[]> inputValues = new ArrayList<>();
+    private double[][] inputValues;
 
     /*
     the output values are objects, as we don't know what the output will be at this point.
@@ -50,81 +48,71 @@ public class NeuralNetwork{
     - update the weights and biases for each neuron
 
      */
-    private ArrayList<Object> outputValues = new ArrayList<>();
 
-    public NeuralNetwork(int seed, int[] hiddenLayers, ArrayList<Double[]> inputValues, ArrayList<Object> outputValues) {
+    // Indexed parallel to network[]; activations[0] is the input layer's activation and unused.
+    private String[] classLabels;
+    private Activation[] activations;
+    private int batchSize;
+
+    public NeuralNetwork(int seed, Activation[] activations,int batchSize ,int[] hiddenLayers, double[][] inputValues, String[] classLabels) {
         random = new Random(seed);
-        this.hiddenLayers = hiddenLayers;
+        this.numHiddenLayers = hiddenLayers;
         this.inputValues = inputValues;
+        this.numberOfLayers = hiddenLayers.length + 2;
+        this.classLabels = classLabels;
+        this.activations = activations;
+        this.batchSize = batchSize;
 
-        createInputNeurons();
-        createHiddenNeurons();
-        createOutputNeurons();
-
-        network.add(inputNeurons);
-        network.addAll(hiddenNeurons);
-        network.add(outputNeurons);
-
-        setPrevNeuron();
-        setWeights();
-        setBias();
+        createNetwork();
 
     }
 
-    private void createHiddenNeurons(){
-        for (int hiddenLayer : hiddenLayers) {
-            ArrayList<Neuron> neurons = new ArrayList<>();
-            for (int j = 0; j < hiddenLayer; j++) {
-                Neuron neuron = new Neuron();
-                neurons.add(neuron);
-            }
-            hiddenNeurons.add(neurons);
-        }
-    }
+//    private void createHiddenLayers(){
+//        Layer[] layers = new Layer[numHiddenLayers.length];
+//        for (int i = 0; i < numHiddenLayers.length; i++) {
+//            layers[i] = new Layer();
+//            int prevSize = (i == 0) ? inputValues[0].length : numHiddenLayers[i - 1];
+//            layers[i].initialise(numHiddenLayers[i], prevSize, activation);
+//        }
+//        hiddenLayers = layers;
+//    }
 
-    private void createInputNeurons(){
-        for(int i = 0; i <= inputValues.get(0).length - 1; i++){
-            Neuron neuron = new Neuron();
-            inputNeurons.add(neuron);
-        }
-    }
+    private void createNetwork(){
+        Layer[] layers = new Layer[numberOfLayers];
+        for (int i = 0; i < numberOfLayers; i++) {
 
-    private void createOutputNeurons(){
-        for(int i = 0; i < outputValues.size(); i++){
-            Neuron neuron = new Neuron();
-            outputNeurons.add(neuron);
-        }
-    }
-
-    private void setPrevNeuron(){
-        for (int i = 1; i < network.size(); i++) {
-            for (int j = 0; j < network.get(i).size(); j++) {
-                network.get(i).get(j).setPrevNeurons(network.get(i - 1));
+            if (i == 0){
+                layers[i] = new Layer(inputValues[0].length);
+            }else if (i == numberOfLayers - 1){
+                layers[i] = new Layer(classLabels.length);
+                layers[i].initialise(layers[i-1].getNeurons(), activations[i], batchSize);
+            }else{
+                layers[i] = new Layer(numHiddenLayers[i-1]);
+                layers[i].initialise(layers[i-1].getNeurons(), activations[i], batchSize);
             }
         }
+        network = layers;
     }
 
-    private void setWeights(){
-        for(ArrayList<Neuron> neurons : network){
-            for(Neuron neuron : neurons){
-                ArrayList<Double> weights = new ArrayList<>();
-                for(int i = 0; i < neuron.getPrevNeurons().size(); i++){
-                    weights.add(random.nextDouble());
+    /*
+    Biases are initialised as 0 on purpose
+     */
+    private void populateLayers(){
+        for (int i = 1; i < network.length; i++){
+            Layer layer = network[i];
+            int fanIn = network[i-1].getNeurons();
+            int fanOut = (i + 1 < network.length) ? network[i+1].getNeurons() : 0;
+            for(int j = 0; j < layer.weights.length; j++){
+                for(int k = 0; k < layer.weights[j].length; k++){
+                    layer.weights[j][k] = (layer.activation instanceof ReLU)
+                            ? NeuralUtil.heUniform(fanIn, random)
+                            : NeuralUtil.xavierUniform(fanIn, fanOut, random);
                 }
-                neuron.setWeight(weights);
             }
         }
     }
 
-    private void setBias(){
-        for(ArrayList<Neuron> neurons : network){
-            for(Neuron neuron : neurons){
-                neuron.setBias(random.nextDouble());
-            }
-        }
-    }
-
-    private void feedForward(Neuron neuron){
-
+    private void feedForward(Layer prevLayer, Layer currLayer){
+        double[][] Z = NeuralUtil.dotMatrix(prevLayer.getA(), currLayer.getWeights());
     }
 }
