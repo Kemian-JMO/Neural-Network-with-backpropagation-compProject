@@ -114,5 +114,7 @@ public class NeuralNetwork{
 
     private void feedForward(Layer prevLayer, Layer currLayer){
         double[][] Z = NeuralUtil.dotMatrix(prevLayer.getA(), currLayer.getWeights());
+        Z = NeuralUtil.matrixAddBias(Z, currLayer.getBias());
+        double[][] A = currLayer.activation.apply(Z);
     }
 }
