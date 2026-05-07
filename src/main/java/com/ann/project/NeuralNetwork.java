@@ -101,12 +101,12 @@ public class NeuralNetwork{
         for (int i = 1; i < network.length; i++){
             Layer layer = network[i];
             int fanIn = network[i-1].getNeurons();
-            int fanOut = (i + 1 < network.length) ? network[i+1].getNeurons() : 0;
+            int fanOut = (network[i].getNeurons());
             for(int j = 0; j < layer.weights.length; j++){
                 for(int k = 0; k < layer.weights[j].length; k++){
                     layer.weights[j][k] = (layer.activation instanceof ReLU)
-                            ? NeuralUtil.heUniform(fanIn, random)
-                            : NeuralUtil.xavierUniform(fanIn, fanOut, random);
+                            ? NeuralUtil.heInitialise(fanIn, random)
+                            : NeuralUtil.xavierInitialise(fanIn, fanOut, random);
                 }
             }
         }
@@ -116,5 +116,9 @@ public class NeuralNetwork{
         double[][] Z = NeuralUtil.dotMatrix(prevLayer.getA(), currLayer.getWeights());
         Z = NeuralUtil.matrixAddBias(Z, currLayer.getBias());
         double[][] A = currLayer.activation.apply(Z);
+        currLayer.setA(A);
+        currLayer.setZ(Z);
     }
+
+    private void
 }
