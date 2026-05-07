@@ -32,14 +32,27 @@ public final class NeuralUtil {
         return result;
     }
 
-    public static double xavierUniform(int fanIn, int fanOut, Random r){
+    public static double xavierInitialise(int fanIn, int fanOut, Random r){
         double limit = Math.sqrt((double) 6 / (fanIn + fanOut));
         return (r.nextDouble() * 2 - 1) * limit;
     }
 
-    public static double heUniform(int fanIn, Random r){
-        double limit = Math.sqrt((double) 6 / fanIn);
-        return (r.nextDouble() * 2 - 1) * limit;
+    public static double heInitialise(int fanIn, Random r){
+        double limit = Math.sqrt((double) 2 / fanIn);
+        return (r.nextGaussian() * 2 - 1) * limit;
+    }
+
+    public static double crossEntropy(double[][] yTrue, double[][] yHat){
+        double loss = 0;
+        double epsilon = 1e-11;
+        for (int i = 0; i < yTrue.length; i++)
+            for (int j = 0; j < yTrue[0].length; j++) {
+                double yh = Double.isFinite(yHat[i][j]) ? yHat[i][j] : 0;
+                yh = Math.max(yh, epsilon);
+                yh = Math.log(yh);
+                loss -= yTrue[i][j] * Math.log(yh);
+            }
+        return loss;
     }
 }
 
