@@ -140,6 +140,8 @@ class NeuralUtilTest {
                 {0.2, 0.4, 0.6}
         };
 
+
+
         double[][] result = NeuralUtil.dotMatrix(prevA, weights);
 
         assertMatrixEquals(expected, result);
