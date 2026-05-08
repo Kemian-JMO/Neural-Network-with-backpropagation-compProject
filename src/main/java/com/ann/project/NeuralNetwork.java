@@ -120,5 +120,54 @@ public class NeuralNetwork{
         currLayer.setZ(Z);
     }
 
-    private void
+    private void train(){
+        //
+        double[][] label = new double[0][];
+
+        //
+        for (int i = 1; i < network.length; i++){
+            feedForward(network[i-1], network[i]);
+        }
+
+        double batchCost = NeuralUtil.crossEntropy(label,network[network.length-1].getA());
+
+        double[][] loss = NeuralUtil.lossGradient(label,network[network.length-1].getA());
+
+
+    }
+
+    private void backPropagation(Layer layer, double[][] prevA, double[][] loss){
+
+        double[][] delta;
+        double[][] dA_dZ;
+        double[][] dZ_dW;
+        double[] dZ_dB;
+        double[][] layerLoss;
+
+
+
+
+        //get derivative
+        dA_dZ = layer.derivative();
+
+        //calculate delta with hadamard product
+        delta = NeuralUtil.hadamardProduct(loss, dA_dZ);
+
+        //calculate weight gradiant
+        dZ_dW = NeuralUtil.dotMatrix(NeuralUtil.transpose(prevA),delta);
+
+        //average the weight gradiant
+        dZ_dW = NeuralUtil.averageWeights(dZ_dW, batchSize);
+
+        //calculate bias gradiant
+        dZ_dB = NeuralUtil.biasGradiant(delta);
+
+        //calculate loss in the current layer
+        layerLoss = NeuralUtil.dotMatrix(NeuralUtil.transpose(layer.getWeights()),delta);
+
+        layer.setWeightGradients(dZ_dW);
+        layer.setBiasGradients(dZ_dB);
+
+
+    }
 }
