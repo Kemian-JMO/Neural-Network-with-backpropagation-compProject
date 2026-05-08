@@ -3,7 +3,9 @@ package com.ann.project;
 public class Layer {
     int neurons;
     double[][] weights;
+    double[][] weightGradients;
     double[] bias;
+    double[] biasGradients;
     double[][] A;
     double[][] Z;
     double[] deltas;
@@ -15,7 +17,9 @@ public class Layer {
 
     public void initialise(int prevNeurons, Activation activation,int batchSize) {
         weights = new double[prevNeurons][neurons];
+        weightGradients = new double[prevNeurons][neurons];
         bias = new double[neurons];
+        biasGradients = new double[neurons];
         A = new double[batchSize][neurons];
         Z = new double[batchSize][neurons];
         deltas = new double[neurons];
@@ -76,5 +80,25 @@ public class Layer {
 
     public void setActivation(Activation activation) {
         this.activation = activation;
+    }
+
+    public double[][] getWeightGradients() {
+        return weightGradients;
+    }
+
+    public void setWeightGradients(double[][] weightGradients) {
+        this.weightGradients = weightGradients;
+    }
+
+    public double[] getBiasGradients() {
+        return biasGradients;
+    }
+
+    public void setBiasGradients(double[] biasGradients) {
+        this.biasGradients = biasGradients;
+    }
+
+    public double[][] derivative(){
+        return activation.derivative(A);
     }
 }
