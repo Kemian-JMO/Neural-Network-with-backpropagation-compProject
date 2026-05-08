@@ -12,50 +12,24 @@ public class NeuralNetwork{
     private final Random random;
     private int numberOfLayers;
     private int[] numHiddenLayers;
-    private Layer inputNeurons;
-    private Layer[] hiddenLayers;
-    private Layer outputLayer;
     private Layer[] network;
-
-
-    /*
-    The input is the dataset with the arraylist being a list of every datapoint, the double array containing each element of the datapoint.
-    */
     private double[][] inputValues;
-
-    /*
-    the output values are objects, as we don't know what the output will be at this point.
-    this could maybe be Strings?
-     */
+    private String[] classLabels;
+    // Indexed parallel to network[]; activations[0] is the input layer's activation and unused.
+    private Activation[] activations;
+    private int batchSize;
+    private double learningRate;
 
     /*
     The neural network is set up, now we need to begin to make the training logic
-    feedforward:
-    - set the input values as the activation values for the input neurons
-    - calculate the activation values for the hidden neurons one layer at a time
-    - this is done by multiplying the weights of the next layer by the activation values of the previous layer
-    - by making a matrix multiplication of the weights and the activation values of the previous layer we can calculate the activation values of the next layer at once
-    - then the bias is added by adding the bias to the product of the weights and the activation values of the previous layer in a matrix addition
-    - the activation function is applied to the result of the matrix addition
-        * should we have multiple activation functions and choose one?
-        * it wouldnt be too hard to implement and we could have more to discuss about our results in the report
-        * I have mostly read about Relu and sigmoid, for what i could read Relu should be better for object identification
-    - calculate the activation values for the output neurons
-    - compare the output values to the desired output values
-    backpropagation:
-    - calculate the error for each output neuron
-    - calculate the error for each hidden neuron
-    - update the weights and biases for each neuron
 
      */
 
-    // Indexed parallel to network[]; activations[0] is the input layer's activation and unused.
-    private String[] classLabels;
-    private Activation[] activations;
-    private int batchSize;
 
-    public NeuralNetwork(int seed, Activation[] activations,int batchSize ,int[] hiddenLayers, double[][] inputValues, String[] classLabels) {
+
+    public NeuralNetwork(int seed,double learningRate, Activation[] activations,int batchSize ,int[] hiddenLayers, double[][] inputValues, String[] classLabels) {
         random = new Random(seed);
+        this.learningRate = learningRate;
         this.numHiddenLayers = hiddenLayers;
         this.inputValues = inputValues;
         this.numberOfLayers = hiddenLayers.length + 2;
@@ -64,19 +38,9 @@ public class NeuralNetwork{
         this.batchSize = batchSize;
 
         createNetwork();
+        populateLayers();
 
     }
-
-//    private void createHiddenLayers(){
-//        Layer[] layers = new Layer[numHiddenLayers.length];
-//        for (int i = 0; i < numHiddenLayers.length; i++) {
-//            layers[i] = new Layer();
-//            int prevSize = (i == 0) ? inputValues[0].length : numHiddenLayers[i - 1];
-//            layers[i].initialise(numHiddenLayers[i], prevSize, activation);
-//        }
-//        hiddenLayers = layers;
-//    }
-
     private void createNetwork(){
         Layer[] layers = new Layer[numberOfLayers];
         for (int i = 0; i < numberOfLayers; i++) {
@@ -102,9 +66,9 @@ public class NeuralNetwork{
             Layer layer = network[i];
             int fanIn = network[i-1].getNeurons();
             int fanOut = (network[i].getNeurons());
-            for(int j = 0; j < layer.weights.length; j++){
-                for(int k = 0; k < layer.weights[j].length; k++){
-                    layer.weights[j][k] = (layer.activation instanceof ReLU)
+            for(int j = 0; j < layer.getWeights().length; j++){
+                for(int k = 0; k < layer.getWeights()[j].length; k++){
+                    layer.getWeights()[j][k] = (layer.getActivation() instanceof ReLU)
                             ? NeuralUtil.heInitialise(fanIn, random)
                             : NeuralUtil.xavierInitialise(fanIn, fanOut, random);
                 }
@@ -115,7 +79,7 @@ public class NeuralNetwork{
     private void feedForward(Layer prevLayer, Layer currLayer){
         double[][] Z = NeuralUtil.dotMatrix(prevLayer.getA(), currLayer.getWeights());
         Z = NeuralUtil.matrixAddBias(Z, currLayer.getBias());
-        double[][] A = currLayer.activation.apply(Z);
+        double[][] A = currLayer.applyActivation();
         currLayer.setA(A);
         currLayer.setZ(Z);
     }
@@ -131,21 +95,27 @@ public class NeuralNetwork{
 
         double batchCost = NeuralUtil.crossEntropy(label,network[network.length-1].getA());
 
-        double[][] loss = NeuralUtil.lossGradient(label,network[network.length-1].getA());
+        double[][] loss = NeuralUtil.matrixSubtract(label,network[network.length-1].getA());
 
+        for (int i = network.length - 1; i > 0; i--) {
+            loss = backPropagation(network[i], network[i + 1].getA(), loss);
+        }
+
+        for (int i = network.length - 1; i > 0; i--) {
+            gradientDescent(network[i]);
+        }
+
+        //print cost maybe
 
     }
 
-    private void backPropagation(Layer layer, double[][] prevA, double[][] loss){
+    private double[][] backPropagation(Layer layer, double[][] prevA, double[][] loss){
 
         double[][] delta;
         double[][] dA_dZ;
         double[][] dZ_dW;
         double[] dZ_dB;
         double[][] layerLoss;
-
-
-
 
         //get derivative
         dA_dZ = layer.derivative();
@@ -168,6 +138,24 @@ public class NeuralNetwork{
         layer.setWeightGradients(dZ_dW);
         layer.setBiasGradients(dZ_dB);
 
+        return layerLoss;
+    }
 
+    public void gradientDescent(Layer layer){
+        double[][] newWeight;
+        double[] newBias;
+        double[][] scalarWeight;
+        double[] scalarBias;
+
+        scalarWeight = NeuralUtil.scalarMultiply(learningRate, layer.getWeightGradients());
+
+        newWeight = NeuralUtil.matrixSubtract(layer.getWeights(), scalarWeight);
+
+        scalarBias = NeuralUtil.scalarMulVec(learningRate, layer.getBiasGradients());
+
+        newBias = NeuralUtil.vectorSubtract(layer.getBias(), scalarBias);
+
+        layer.setWeights(newWeight);
+        layer.setBias(newBias);
     }
 }
