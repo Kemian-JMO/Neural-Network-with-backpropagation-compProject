@@ -85,7 +85,8 @@ public final class NeuralUtil {
         return sum;
     }
 
-    public static double[][] lossGradient(double[][] yTruth,double[][] yHat){
+    //also crossEntropyLossGradient
+    public static double[][] matrixSubtract(double[][] yTruth, double[][] yHat){
         double[][] loss = new double[yTruth.length][yTruth[0].length];
         for (int i = 0; i < yTruth.length; i++) {
             for(int j = 0; j < yTruth[0].length; j++){
@@ -105,6 +106,35 @@ public final class NeuralUtil {
         }
         return gradiant;
     }
+
+    public static double[][] scalarMultiply(double scalar, double[][] matrix){
+        double[][] result = new double[matrix.length][matrix[0].length];
+        for(int i = 0; i < matrix.length; i++){
+            for(int j = 0; j < matrix[0].length; j++){
+                result[i][j] = matrix[i][j] * scalar;
+            }
+        }
+        return result;
+    }
+
+    public static double[] vectorSubtract(double[] vectorA, double[] vectorB){
+        double[] result = new double[vectorA.length];
+        for(int i = 0; i < vectorA.length; i++){
+                result[i] = vectorA[i] - vectorB[i];
+        }
+        return result;
+    }
+
+    public static double[] scalarMulVec(double scalar, double[] vector){
+        double[] result = new double[vector.length];
+        for(int i = 0; i < vector.length; i++){
+                result[i] = vector[i] * scalar;
+        }
+        return result;
+    }
+
+
+    
 }
 
 
