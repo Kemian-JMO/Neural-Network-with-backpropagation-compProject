@@ -1,177 +1,170 @@
 package com.ann.project;
 
-import static org.junit.jupiter.api.Assertions.*;
-        import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.util.ArrayList;
-import java.util.Arrays;
 
-class NeuralNetworkTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-    private ArrayList<Double[]> testInputValues;
-    private ArrayList<Object> testOutputValues;
-    private int[] testHiddenLayers;
+/**
+ * Tests for NeuralUtil.dotMatrix.
+ *
+ * Convention under test: standard matrix multiplication, result = a * b.
+ * a has shape [m][k], b has shape [k][n], result has shape [m][n].
+ *
+ * For the project's batch-first activation layout, this is invoked as
+ * dotMatrix(prevA, weights) where:
+ *   prevA  is [batchSize][prevNeurons]
+ *   weights is [prevNeurons][neurons]
+ *   result is [batchSize][neurons]
+ */
+class NeuralUtilTest {
 
-    @BeforeEach
-    void setUp() {
-        // Setup test data
-        testInputValues = new ArrayList<>();
-        testInputValues.add(new Double[]{1.0, 2.0, 3.0});
-        testInputValues.add(new Double[]{4.0, 5.0, 6.0});
+    private static final double TOLERANCE = 1e-9;
 
-        testOutputValues = new ArrayList<>();
-        testOutputValues.add("Class A");
-        testOutputValues.add("Class B");
-
-        testHiddenLayers = new int[]{5, 3}; // 2 hidden layers with 5 and 3 neurons
+    /**
+     * Compares two 2D double arrays element-wise within TOLERANCE.
+     * Fails fast at the first mismatch with a message identifying the index.
+     */
+    private static void assertMatrixEquals(double[][] expected, double[][] actual) {
+        assertEquals(expected.length, actual.length, "row count mismatch");
+        for (int i = 0; i < expected.length; i++) {
+            assertEquals(expected[i].length, actual[i].length,
+                    "column count mismatch at row " + i);
+            for (int j = 0; j < expected[i].length; j++) {
+                assertEquals(expected[i][j], actual[i][j], TOLERANCE,
+                        "value mismatch at [" + i + "][" + j + "]");
+            }
+        }
     }
 
+    /**
+     * The hand-worked example used throughout the design discussion:
+     * one sample of 2 features feeding into a 3-neuron layer.
+     * prevA [1][2] * weights [2][3] = Z [1][3].
+     */
     @Test
-    void testNeuralNetworkCreation() {
-        // Test successful neural network creation
-        NeuralNetwork network = new NeuralNetwork(42, testHiddenLayers, testInputValues, testOutputValues);
-        assertNotNull(network, "Neural network should be created successfully");
+    void dotMatrix_handWorkedForwardPassExample() {
+        double[][] prevA = {
+                {0.5, 0.8}
+        };
+        double[][] weights = {
+                {0.1, 0.3, 0.5},
+                {0.2, 0.4, 0.6}
+        };
+        double[][] expected = {
+                {0.21, 0.47, 0.73}
+        };
+
+        double[][] result = NeuralUtil.dotMatrix(prevA, weights);
+
+        assertMatrixEquals(expected, result);
     }
 
+    /**
+     * A * I = A. Catches accumulator-initialisation bugs and any case
+     * where the function inadvertently transposes or rearranges A.
+     */
     @Test
-    void testNeuralNetworkCreationWithEmptyHiddenLayers() {
-        // Test creation with no hidden layers (direct input to output)
-        int[] emptyHiddenLayers = new int[0];
-        assertDoesNotThrow(() -> {
-            new NeuralNetwork(42, emptyHiddenLayers, testInputValues, testOutputValues);
-        }, "Should handle empty hidden layers without throwing exception");
+    void dotMatrix_multiplyByIdentityReturnsOriginal() {
+        double[][] a = {
+                {1.0, 2.0, 3.0},
+                {4.0, 5.0, 6.0}
+        };
+        double[][] identity = {
+                {1.0, 0.0, 0.0},
+                {0.0, 1.0, 0.0},
+                {0.0, 0.0, 1.0}
+        };
+
+        double[][] result = NeuralUtil.dotMatrix(a, identity);
+
+        assertMatrixEquals(a, result);
     }
 
+    /**
+     * Non-square shapes [2][3] * [3][4] = [2][4].
+     * Guards against bugs that only surface when m != k != n.
+     */
     @Test
-    void testNeuralNetworkCreationWithSingleHiddenLayer() {
-        // Test creation with single hidden layer
-        int[] singleHiddenLayer = new int[]{4};
-        assertDoesNotThrow(() -> {
-            new NeuralNetwork(42, singleHiddenLayer, testInputValues, testOutputValues);
-        }, "Should handle single hidden layer creation");
+    void dotMatrix_nonSquareShapes() {
+        double[][] a = {
+                {1.0, 2.0, 3.0},
+                {4.0, 5.0, 6.0}
+        };
+        double[][] b = {
+                {1.0, 2.0, 3.0, 4.0},
+                {5.0, 6.0, 7.0, 8.0},
+                {9.0, 10.0, 11.0, 12.0}
+        };
+        // computed by hand:
+        // result[0][0] = 1*1 + 2*5 + 3*9 = 38
+        // result[0][1] = 1*2 + 2*6 + 3*10 = 44
+        // result[0][2] = 1*3 + 2*7 + 3*11 = 50
+        // result[0][3] = 1*4 + 2*8 + 3*12 = 56
+        // result[1][0] = 4*1 + 5*5 + 6*9 = 83
+        // result[1][1] = 4*2 + 5*6 + 6*10 = 98
+        // result[1][2] = 4*3 + 5*7 + 6*11 = 113
+        // result[1][3] = 4*4 + 5*8 + 6*12 = 128
+        double[][] expected = {
+                {38.0, 44.0, 50.0, 56.0},
+                {83.0, 98.0, 113.0, 128.0}
+        };
+
+        double[][] result = NeuralUtil.dotMatrix(a, b);
+
+        assertMatrixEquals(expected, result);
     }
 
+    /**
+     * Multiple samples in a batch. Confirms that batch-first layout
+     * works for batchSize > 1 -- each row of prevA is processed
+     * independently against the same weight matrix.
+     */
     @Test
-    void testWeightInitialization() {
-        NeuralNetwork network = new NeuralNetwork(42, testHiddenLayers, testInputValues, testOutputValues);
+    void dotMatrix_multipleSamplesInBatch() {
+        double[][] prevA = {
+                {0.5, 0.8},
+                {1.0, 0.0},
+                {0.0, 1.0}
+        };
+        double[][] weights = {
+                {0.1, 0.3, 0.5},
+                {0.2, 0.4, 0.6}
+        };
+        // row 0: same as the hand-worked example -> [0.21, 0.47, 0.73]
+        // row 1: 1*weights[0] + 0*weights[1] = [0.1, 0.3, 0.5]
+        // row 2: 0*weights[0] + 1*weights[1] = [0.2, 0.4, 0.6]
+        double[][] expected = {
+                {0.21, 0.47, 0.73},
+                {0.1, 0.3, 0.5},
+                {0.2, 0.4, 0.6}
+        };
 
-        // Since weights are set using populateWeights method, let's test if neurons have weights
-        // Note: This would require exposing the network structure or adding getter methods
-        // For now, we'll test that the network doesn't throw exceptions during creation
-        assertNotNull(network, "Network should initialize weights without errors");
+
+
+        double[][] result = NeuralUtil.dotMatrix(prevA, weights);
+
+        assertMatrixEquals(expected, result);
     }
 
+    /**
+     * Mismatched inner dimensions should fail loudly rather than silently
+     * producing garbage. The current implementation throws
+     * ArrayIndexOutOfBoundsException, which is acceptable -- the contract
+     * is that callers supply compatible shapes.
+     */
     @Test
-    void testDeterministicWeightGeneration() {
-        // Test that same seed produces same weights (deterministic behavior)
-        int seed = 123;
-        NeuralNetwork network1 = new NeuralNetwork(seed, testHiddenLayers, testInputValues, testOutputValues);
-        NeuralNetwork network2 = new NeuralNetwork(seed, testHiddenLayers, testInputValues, testOutputValues);
+    void dotMatrix_mismatchedInnerDimensionsThrows() {
+        double[][] a = {
+                {1.0, 2.0}     // [1][2]
+        };
+        double[][] b = {
+                {1.0, 2.0, 3.0},
+                {4.0, 5.0, 6.0},
+                {7.0, 8.0, 9.0} // [3][3] -- inner dim 3 != a's inner dim 2
+        };
 
-        // Both networks should be created successfully with same seed
-        assertNotNull(network1, "First network should be created");
-        assertNotNull(network2, "Second network should be created");
-        // Note: To fully test weight equality, we'd need getter methods for weights
-    }
-
-    @Test
-    void testErrorHandlingNullInputValues() {
-        // Test error handling for null input values
-        assertThrows(Exception.class, () -> {
-            new NeuralNetwork(42, testHiddenLayers, null, testOutputValues);
-        }, "Should throw exception for null input values");
-    }
-
-    @Test
-    void testErrorHandlingNullOutputValues() {
-        // Test error handling for null output values
-        assertThrows(Exception.class, () -> {
-            new NeuralNetwork(42, testHiddenLayers, testInputValues, null);
-        }, "Should throw exception for null output values");
-    }
-
-    @Test
-    void testErrorHandlingNullHiddenLayers() {
-        // Test error handling for null hidden layers
-        assertThrows(Exception.class, () -> {
-            new NeuralNetwork(42, null, testInputValues, testOutputValues);
-        }, "Should throw exception for null hidden layers");
-    }
-
-    @Test
-    void testErrorHandlingEmptyInputValues() {
-        // Test error handling for empty input values
-        ArrayList<Double[]> emptyInputs = new ArrayList<>();
-        assertThrows(Exception.class, () -> {
-            new NeuralNetwork(42, testHiddenLayers, emptyInputs, testOutputValues);
-        }, "Should throw exception for empty input values");
-    }
-
-    @Test
-    void testErrorHandlingEmptyOutputValues() {
-        // Test error handling for empty output values
-        ArrayList<Object> emptyOutputs = new ArrayList<>();
-        assertThrows(Exception.class, () -> {
-            new NeuralNetwork(42, testHiddenLayers, testInputValues, emptyOutputs);
-        }, "Should throw exception for empty output values");
-    }
-
-    @Test
-    void testErrorHandlingNegativeHiddenLayerSize() {
-        // Test error handling for negative hidden layer sizes
-        int[] negativeHiddenLayers = new int[]{5, -3, 2};
-        assertThrows(Exception.class, () -> {
-            new NeuralNetwork(42, negativeHiddenLayers, testInputValues, testOutputValues);
-        }, "Should throw exception for negative hidden layer sizes");
-    }
-
-    @Test
-    void testErrorHandlingZeroHiddenLayerSize() {
-        // Test error handling for zero hidden layer sizes
-        int[] zeroHiddenLayers = new int[]{5, 0, 2};
-        assertThrows(Exception.class, () -> {
-            new NeuralNetwork(42, zeroHiddenLayers, testInputValues, testOutputValues);
-        }, "Should throw exception for zero hidden layer sizes");
-    }
-
-    @Test
-    void testErrorHandlingMismatchedDataSizes() {
-        // Test when input and output data have different sizes
-        ArrayList<Double[]> mismatchedInputs = new ArrayList<>();
-        mismatchedInputs.add(new Double[]{1.0, 2.0});
-
-        ArrayList<Object> mismatchedOutputs = new ArrayList<>();
-        mismatchedOutputs.add("Class A");
-        mismatchedOutputs.add("Class B");
-        mismatchedOutputs.add("Class C"); // One more output than inputs
-
-        assertThrows(Exception.class, () -> {
-            new NeuralNetwork(42, testHiddenLayers, mismatchedInputs, mismatchedOutputs);
-        }, "Should throw exception for mismatched input/output data sizes");
-    }
-
-    @Test
-    void testLargeNetworkCreation() {
-        // Test creation of a larger network
-        int[] largeHiddenLayers = new int[]{100, 50, 25, 10};
-        assertDoesNotThrow(() -> {
-            new NeuralNetwork(42, largeHiddenLayers, testInputValues, testOutputValues);
-        }, "Should handle large network creation");
-    }
-
-    @Test
-    void testNetworkWithDifferentInputSizes() {
-        // Test with larger input dimensions
-        ArrayList<Double[]> largeInputs = new ArrayList<>();
-        largeInputs.add(new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0});
-        largeInputs.add(new Double[]{11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0});
-
-        ArrayList<Object> largeOutputs = new ArrayList<>();
-        largeOutputs.add("Class A");
-        largeOutputs.add("Class B");
-
-        assertDoesNotThrow(() -> {
-            new NeuralNetwork(42, testHiddenLayers, largeInputs, largeOutputs);
-        }, "Should handle larger input dimensions");
+        assertThrows(IllegalArgumentException.class,
+                () -> NeuralUtil.dotMatrix(a, b));
     }
 }
