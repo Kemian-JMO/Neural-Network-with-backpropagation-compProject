@@ -54,6 +54,57 @@ public final class NeuralUtil {
             }
         return loss;
     }
+
+    public static double[][] transpose(double[][] matrix){
+        double[][] result = new double[matrix[0].length][matrix.length];
+        for(int i = 0; i < matrix.length; i++){
+            for(int j = 0; j < matrix[0].length; j++){
+                result[j][i] = matrix[i][j];
+            }
+        }
+        return result;
+    }
+
+    public static double[][] hadamardProduct(double[][] loss, double[][] derivative){
+        double[][] hp = new double[loss.length][loss[0].length];
+        for (int i = 0; i < loss.length; i++) {
+            for(int j = 0; j < loss[0].length; j++){
+              hp[i][j] = loss[i][j] * derivative[i][j];
+            }
+        }
+        return hp;
+    }
+
+    public static double[][] averageWeights(double[][] gradiant, int batchSize){
+        double[][] sum = new double[gradiant.length][gradiant[0].length];
+        for(int i = 0; i < gradiant.length; i++){
+            for(int j = 0; j < gradiant[0].length; j++){
+                sum[i][j] = gradiant[i][j] / batchSize;
+            }
+        }
+        return sum;
+    }
+
+    public static double[][] lossGradient(double[][] yTruth,double[][] yHat){
+        double[][] loss = new double[yTruth.length][yTruth[0].length];
+        for (int i = 0; i < yTruth.length; i++) {
+            for(int j = 0; j < yTruth[0].length; j++){
+                loss[i][j] = yHat[i][j] - yTruth[i][j];
+            }
+        }
+        return loss;
+    }
+
+    public static double[] biasGradiant(double[][] delta){
+        double[] gradiant = new double[delta[0].length];
+        for(int i = 0; i < delta[0].length; i++){
+            for(int j = 0; j < delta.length; j++){
+                gradiant[i] += delta[j][i];
+            }
+            gradiant[i] /= delta.length;
+        }
+        return gradiant;
+    }
 }
 
 
