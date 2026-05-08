@@ -1,15 +1,15 @@
 package com.ann.project;
 
 public class Layer {
-    int neurons;
-    double[][] weights;
-    double[][] weightGradients;
-    double[] bias;
-    double[] biasGradients;
-    double[][] A;
-    double[][] Z;
-    double[] deltas;
-    Activation activation;
+    private int neurons;
+    private double[][] weights;
+    private double[][] weightGradients;
+    private double[] bias;
+    private double[] biasGradients;
+    private double[][] A;
+    private double[][] Z;
+    private double[] deltas;
+    private Activation activation;
 
     Layer(int neurons){
         this.neurons = neurons;
@@ -96,6 +96,10 @@ public class Layer {
 
     public void setBiasGradients(double[] biasGradients) {
         this.biasGradients = biasGradients;
+    }
+
+    public double[][] applyActivation(){
+        return activation.apply(Z);
     }
 
     public double[][] derivative(){
