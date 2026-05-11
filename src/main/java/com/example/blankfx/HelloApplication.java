@@ -1,5 +1,6 @@
 package com.example.blankfx;
 
+import com.ann.project.MnistLoader;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -17,3 +18,4 @@ public class HelloApplication extends Application {
         stage.show();
     }
 }
+
