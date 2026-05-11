@@ -7,10 +7,11 @@ public final class NeuralUtil {
     private NeuralUtil(){}
 
     public static double[][] dotMatrix(double[][] a, double[][] b){
-
         double[][] result = new double[a.length][b[0].length];
         for(int i = 0; i < a.length; i++){
             for(int j = 0; j < b[0].length; j++){
+//                System.out.println("loop i: " + i + " j: " + j + "MD");
+//                System.out.println("a: " + a.length + "ax" + a[0].length + " b: " + b.length + "bx" + b[0].length);
                 for(int k = 0; k < a[0].length; k++){
                     if (a[0].length != b.length) {
                         throw new IllegalArgumentException("Arrays have different lengths");
@@ -23,10 +24,10 @@ public final class NeuralUtil {
     }
 
     public static double[][] matrixAddBias(double[][] matrix, double bias[]){
-        double[][] result = new double[matrix.length][matrix[0].length + 1];
+        double[][] result = new double[matrix.length][matrix[0].length];
         for(int i = 0; i < matrix.length; i++){
             for(int j = 0; j < matrix[0].length; j++){
-                result[i][j] = matrix[i][j] + bias[i];
+                result[i][j] = matrix[i][j] + bias[j];
             }
         }
         return result;
@@ -47,11 +48,10 @@ public final class NeuralUtil {
         double epsilon = 1e-11;
         for (int i = 0; i < yTrue.length; i++)
             for (int j = 0; j < yTrue[0].length; j++) {
-                double yh = Double.isFinite(yHat[i][j]) ? yHat[i][j] : 0;
-                yh = Math.max(yh, epsilon);
-                yh = Math.log(yh);
+                double yh = Math.max(yHat[i][j], epsilon);
                 loss -= yTrue[i][j] * Math.log(yh);
             }
+        loss /= yTrue.length;
         return loss;
     }
 
