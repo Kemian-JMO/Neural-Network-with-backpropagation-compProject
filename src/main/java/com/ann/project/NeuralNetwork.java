@@ -14,7 +14,7 @@ public class NeuralNetwork{
     private int[] numHiddenLayers;
     private Layer[] network;
     private double[][] inputValues;
-    private String[] classLabels;
+    private double[][] classLabels;
     // Indexed parallel to network[]; activations[0] is the input layer's activation and unused.
     private Activation[] activations;
     private int batchSize;
@@ -27,7 +27,7 @@ public class NeuralNetwork{
 
 
 
-    public NeuralNetwork(int seed,double learningRate, Activation[] activations,int batchSize ,int[] hiddenLayers, double[][] inputValues, String[] classLabels) {
+    public NeuralNetwork(int seed,double learningRate, Activation[] activations,int batchSize ,int[] hiddenLayers, double[][] inputValues, double[][] classLabels) {
         random = new Random(seed);
         this.learningRate = learningRate;
         this.numHiddenLayers = hiddenLayers;
@@ -48,7 +48,7 @@ public class NeuralNetwork{
             if (i == 0){
                 layers[i] = new Layer(inputValues[0].length);
             }else if (i == numberOfLayers - 1){
-                layers[i] = new Layer(classLabels.length);
+                layers[i] = new Layer(classLabels[0].length);
                 layers[i].initialise(layers[i-1].getNeurons(), activations[i], batchSize);
             }else{
                 layers[i] = new Layer(numHiddenLayers[i-1]);
@@ -76,17 +76,42 @@ public class NeuralNetwork{
         }
     }
 
+    private void populateInputLayer(double[][] inputValues){
+        double[][] input = inputValues.clone();
+            network[0].setA(input);
+    }
+
     private void feedForward(Layer prevLayer, Layer currLayer){
         double[][] Z = NeuralUtil.dotMatrix(prevLayer.getA(), currLayer.getWeights());
         Z = NeuralUtil.matrixAddBias(Z, currLayer.getBias());
+        currLayer.setZ(Z);
         double[][] A = currLayer.applyActivation();
         currLayer.setA(A);
-        currLayer.setZ(Z);
     }
 
-    private void train(){
+    public void trainBatch(){
+        long totalTime = System.nanoTime();
+        for (int i = 0; i < inputValues.length/batchSize; i++) {
+            System.out.println("training Batch "+ i);
+            long batchTime = System.nanoTime();
+            double[][] batch = new double[batchSize][inputValues[0].length];
+            double[][] label = new double[batchSize][classLabels.length];
+            for (int j = 0; j < batchSize; j++) {
+                int index = i*batchSize+j;
+                batch[j] = inputValues[index].clone();
+                label[j] = classLabels[index].clone();
+            }
+            double batchCost = train(batch,label);
+            System.out.println("Batch "+ i + "time: " + (System.nanoTime() - batchTime)/1000000 +"ms");
+            System.out.println("Batch "+ i + "cost: " + batchCost);
+            System.out.println("Total time: " + (System.nanoTime() - totalTime)/1000000 +"ms");
+        }
+    }
+
+    public double train(double[][] batch, double[][] label){
         //
-        double[][] label = new double[0][];
+        populateInputLayer(batch);
+
 
         //
         for (int i = 1; i < network.length; i++){
@@ -98,7 +123,7 @@ public class NeuralNetwork{
         double[][] loss = NeuralUtil.matrixSubtract(label,network[network.length-1].getA());
 
         for (int i = network.length - 1; i > 0; i--) {
-            loss = backPropagation(network[i], network[i + 1].getA(), loss);
+            loss = backPropagation(network[i], network[i - 1].getA(), loss);
         }
 
         for (int i = network.length - 1; i > 0; i--) {
@@ -106,7 +131,7 @@ public class NeuralNetwork{
         }
 
         //print cost maybe
-
+        return batchCost;
     }
 
     private double[][] backPropagation(Layer layer, double[][] prevA, double[][] loss){
@@ -133,7 +158,7 @@ public class NeuralNetwork{
         dZ_dB = NeuralUtil.biasGradiant(delta);
 
         //calculate loss in the current layer
-        layerLoss = NeuralUtil.dotMatrix(NeuralUtil.transpose(layer.getWeights()),delta);
+        layerLoss = NeuralUtil.dotMatrix(delta, NeuralUtil.transpose(layer.getWeights()));
 
         layer.setWeightGradients(dZ_dW);
         layer.setBiasGradients(dZ_dB);
