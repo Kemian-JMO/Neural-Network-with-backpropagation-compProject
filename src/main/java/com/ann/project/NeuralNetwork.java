@@ -9,14 +9,12 @@ import java.util.Random;
 /*
 We can write about how and why our neural network differs from the 4 graph types as the neural network looks a lot like a graph
 My initial thoughts are that we only need to know the previous nodes so it would be unnessesary to store references between all of them
-
  */
 
 /*
-    Need loading/saving, sigmoid.
+    Need:
     Nice to have:
         parallelism
-
  */
 public class NeuralNetwork implements Serializable{
 
@@ -70,7 +68,6 @@ public class NeuralNetwork implements Serializable{
     private void createNetwork(){
         Layer[] layers = new Layer[numberOfLayers];
         for (int i = 0; i < numberOfLayers; i++) {
-
             if (i == 0){
                 layers[i] = new Layer(trainingData[0].length);
             }else if (i == numberOfLayers - 1){
@@ -152,12 +149,19 @@ public class NeuralNetwork implements Serializable{
     public double train(double[][] batch, double[][] label){
         //
         populateInputLayer(batch);
-
-
-        //
+     //
         for (int i = 1; i < network.length; i++){
             feedForward(network[i-1], network[i]);
+            for(double[] row : network[i].getA())
+                for(double v : row)
+                    if(Double.isNaN(v)) {
+                        System.out.println("NaN in layer " + i);
+                        throw new IllegalArgumentException ("NaN in layer " + i);
+                    }
         }
+
+
+
 
         double batchCost = NeuralUtil.crossEntropy(label,network[network.length-1].getA());
 
@@ -170,8 +174,6 @@ public class NeuralNetwork implements Serializable{
         for (int i = network.length - 1; i > 0; i--) {
             gradientDescent(network[i]);
         }
-
-        //print cost maybe
         return batchCost;
     }
 
@@ -232,7 +234,7 @@ public class NeuralNetwork implements Serializable{
         accuracy = getAccuracy(inferenceLabels, network[network.length-1].getA());
 
         System.out.println("Testing cost: " + cost);
-        System.out.println("Testing accuracy: " + accuracy);
+        System.out.println("Testing accuracy: " + accuracy + "%");
 
         return cost;
     }
@@ -258,7 +260,6 @@ public class NeuralNetwork implements Serializable{
         ObjectOutputStream oos = new ObjectOutputStream(fos);
         oos.flush();
         for (Layer layer : network) {
-            System.out.println("Layer: " + layer);
             oos.writeObject(layer);
         }
         oos.writeObject(null);
@@ -278,8 +279,6 @@ public class NeuralNetwork implements Serializable{
         for (int i = 0; i < network.length; i++) {
             network[i] = layers.get(i);
         }
-
         return network;
     }
-
 }

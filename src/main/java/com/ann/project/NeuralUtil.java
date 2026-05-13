@@ -43,7 +43,6 @@ public final class NeuralUtil {
         double limit = Math.sqrt((double) 2 / fanIn);
         limit = (r.nextGaussian() * 2 - 1) * limit;
         return limit;
-
     }
 
     public static double crossEntropy(double[][] yTrue, double[][] yHat){
@@ -147,8 +146,4 @@ public final class NeuralUtil {
         }
         return maxIndex;
     }
-
-    
 }
-
-

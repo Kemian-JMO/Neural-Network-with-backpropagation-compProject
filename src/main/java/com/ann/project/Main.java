@@ -13,10 +13,10 @@ public class Main {
         double[][][] data = {images, labels, testImages, testLabels};
         System.out.println(images[0].length);
 
-        Activation RELU = new ReLU();
+        Activation RelU = new ReLU();
         Activation SOFTMAX = new SoftMax();
-        Activation[] activations = {null, RELU, SOFTMAX};
-        int[] hiddenLayers = {16};
+        Activation[] activations = {null, RelU, RelU, SOFTMAX};
+        int[] hiddenLayers = {20,20};
 
         NeuralNetwork neuralNetwork = new NeuralNetwork(10,10,30,0.01, activations, hiddenLayers, data);
         neuralNetwork.trainEpoch();
@@ -26,5 +26,4 @@ public class Main {
         System.out.println("Labels indlæst: "   + labels.length);
         System.out.println("Første label: "     + labels[0]);
     }
-
 }

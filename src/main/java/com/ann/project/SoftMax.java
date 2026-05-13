@@ -8,10 +8,10 @@ public class SoftMax implements Activation, Serializable{
     double [][] result = new double[Z.length][Z[0].length];
 
         for (int i = 0; i < Z.length; i++) {
-            double max = Z[i][0];
+            double max = Z[i].length;
             double sum = 0;
             for (int j = 0; j < Z[0].length; j++) {
-                result[i][j] = Math.exp(Z[i][j]-max);
+                result[i][j] = Math.exp(Z[i][j]);
                 sum += result[i][j];
             }
             for (int j = 0; j < Z[0].length; j++) {
