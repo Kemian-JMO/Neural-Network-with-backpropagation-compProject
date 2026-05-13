@@ -271,10 +271,12 @@ public class NeuralNetwork implements Serializable{
         while (ois.available() == 0) {
             layers.add((Layer) ois.readObject());
         }
+        ois.close();
         Layer[] network = new Layer[layers.size()];
         for (int i = 0; i < network.length; i++) {
             network[i] = layers.get(i);
         }
+
         return network;
     }
 
