@@ -1,5 +1,9 @@
 package com.ann.project;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Random;
 
 /*
@@ -7,19 +11,32 @@ We can write about how and why our neural network differs from the 4 graph types
 My initial thoughts are that we only need to know the previous nodes so it would be unnessesary to store references between all of them
 
  */
-public class NeuralNetwork{
 
-    private final Random random;
+/*
+    Need loading/saving, sigmoid.
+    Nice to have:
+        parallelism
+
+ */
+public class NeuralNetwork implements Serializable{
+
+    private Random random;
+    private int epochs;
+    private int batchSize;
+    private double learningRate;
+    private Activation[] activations;
     private int numberOfLayers;
     private int[] numHiddenLayers;
     private Layer[] network;
-    private double[][] inputValues;
-    private double[][] classLabels;
+    private double[][] trainingData;
+    private double[][] trainingLabels;
+    private double[][] testingData;
+    private double[][] testingLabels;
     // Indexed parallel to network[]; activations[0] is the input layer's activation and unused.
-    private Activation[] activations;
-    private int batchSize;
-    private double learningRate;
-
+    private double lastTrainingCost;
+    private double bestValCost = Double.MAX_VALUE;
+    private Layer[] bestNetwork;
+    private String filename = "network.nn";
     /*
     The neural network is set up, now we need to begin to make the training logic
 
@@ -27,28 +44,37 @@ public class NeuralNetwork{
 
 
 
-    public NeuralNetwork(int seed,double learningRate, Activation[] activations,int batchSize ,int[] hiddenLayers, double[][] inputValues, double[][] classLabels) {
+    public NeuralNetwork(int seed, int epochs, int batchSize, double learningRate, Activation[] activations, int[] hiddenLayers, double[][][] data) {
         random = new Random(seed);
+        this.epochs = epochs;
+        this.batchSize = batchSize;
         this.learningRate = learningRate;
         this.numHiddenLayers = hiddenLayers;
-        this.inputValues = inputValues;
         this.numberOfLayers = hiddenLayers.length + 2;
-        this.classLabels = classLabels;
+        this.trainingData = data[0];
+        this.trainingLabels = data[1];
+        this.testingData = data[2];
+        this.testingLabels = data[3];
         this.activations = activations;
-        this.batchSize = batchSize;
+
 
         createNetwork();
         populateLayers();
 
     }
+
+    public NeuralNetwork(Layer[] network) {
+        this.network = network;
+    }
+
     private void createNetwork(){
         Layer[] layers = new Layer[numberOfLayers];
         for (int i = 0; i < numberOfLayers; i++) {
 
             if (i == 0){
-                layers[i] = new Layer(inputValues[0].length);
+                layers[i] = new Layer(trainingData[0].length);
             }else if (i == numberOfLayers - 1){
-                layers[i] = new Layer(classLabels[0].length);
+                layers[i] = new Layer(trainingLabels[0].length);
                 layers[i].initialise(layers[i-1].getNeurons(), activations[i], batchSize);
             }else{
                 layers[i] = new Layer(numHiddenLayers[i-1]);
@@ -90,22 +116,37 @@ public class NeuralNetwork{
     }
 
     public void trainBatch(){
-        long totalTime = System.nanoTime();
-        for (int i = 0; i < inputValues.length/batchSize; i++) {
-            System.out.println("training Batch "+ i);
-            long batchTime = System.nanoTime();
-            double[][] batch = new double[batchSize][inputValues[0].length];
-            double[][] label = new double[batchSize][classLabels.length];
+        for (int i = 0; i < trainingData.length/batchSize; i++) {
+            double[][] batch = new double[batchSize][trainingData[0].length];
+            double[][] label = new double[batchSize][trainingLabels.length];
             for (int j = 0; j < batchSize; j++) {
                 int index = i*batchSize+j;
-                batch[j] = inputValues[index].clone();
-                label[j] = classLabels[index].clone();
+                batch[j] = trainingData[index].clone();
+                label[j] = trainingLabels[index].clone();
             }
             double batchCost = train(batch,label);
-            System.out.println("Batch "+ i + "time: " + (System.nanoTime() - batchTime)/1000000 +"ms");
-            System.out.println("Batch "+ i + "cost: " + batchCost);
-            System.out.println("Total time: " + (System.nanoTime() - totalTime)/1000000 +"ms");
+            lastTrainingCost = batchCost;
         }
+    }
+
+    public void trainEpoch() throws IOException {
+        long totalTime = System.nanoTime();
+        for (int i = 1; i < epochs+1; i++) {
+            System.out.println("training Epoch "+ i);
+            long epochTime = System.nanoTime();
+            trainBatch();
+            double cost = runInference(testingData, testingLabels);
+            System.out.println("Epoch " + i + " last training cost: " + lastTrainingCost);
+            System.out.println("Epoch " + i + " cost: " + cost);
+            if (isBest(cost)){
+                bestValCost = cost;
+                bestNetwork = network.clone();
+                System.out.println("Epoch " + i + " is the best." + " \nBest cost: " + cost);
+            }
+            System.out.println("Epoch "+ i + " time: " + (System.nanoTime() - epochTime)/1000000 +"ms");
+        }
+        System.out.println("Total time: " + (System.nanoTime() - totalTime)/1000000 +"ms");
+        saveNetwork(bestNetwork, filename);
     }
 
     public double train(double[][] batch, double[][] label){
@@ -166,7 +207,7 @@ public class NeuralNetwork{
         return layerLoss;
     }
 
-    public void gradientDescent(Layer layer){
+    private void gradientDescent(Layer layer){
         double[][] newWeight;
         double[] newBias;
         double[][] scalarWeight;
@@ -183,4 +224,58 @@ public class NeuralNetwork{
         layer.setWeights(newWeight);
         layer.setBias(newBias);
     }
+
+    public double runInference(double[][] inferenceData, double[][] inferenceLabels){
+        double cost;
+        int accuracy;
+        cost = train(inferenceData, inferenceLabels);
+        accuracy = getAccuracy(inferenceLabels, network[network.length-1].getA());
+
+        System.out.println("Testing cost: " + cost);
+        System.out.println("Testing accuracy: " + accuracy);
+
+        return cost;
+    }
+
+    private int getAccuracy(double[][] labels, double[][] predictions){
+        int result = 0;
+        for (int i = 0; i < labels.length; i++) {
+            int lMax = NeuralUtil.getMaxValueIndex(labels[i]);
+            int pMax = NeuralUtil.getMaxValueIndex(predictions[i]);
+            if (lMax == pMax) result++;
+        }
+        result = (result * 100) / labels.length;
+        return result;
+    }
+
+    public boolean isBest(double cost){
+        return cost < bestValCost;
+    }
+
+    public void saveNetwork(Layer[] network, String file) throws IOException {
+        Files.createDirectories(Paths.get("Models"));
+        FileOutputStream fos = new FileOutputStream("Models/"+file,false);
+        ObjectOutputStream oos = new ObjectOutputStream(fos);
+        oos.flush();
+        for (Layer layer : network) {
+            System.out.println("Layer: " + layer);
+            oos.writeObject(layer);
+        }
+        oos.close();
+    }
+
+    public static Layer[] loadNetwork(String file) throws IOException, ClassNotFoundException {
+        FileInputStream fis = new FileInputStream(file);
+        ObjectInputStream ois = new ObjectInputStream(fis);
+        ArrayList<Layer> layers = new ArrayList<>();
+        while (ois.available() == 0) {
+            layers.add((Layer) ois.readObject());
+        }
+        Layer[] network = new Layer[layers.size()];
+        for (int i = 0; i < network.length; i++) {
+            network[i] = layers.get(i);
+        }
+        return network;
+    }
+
 }

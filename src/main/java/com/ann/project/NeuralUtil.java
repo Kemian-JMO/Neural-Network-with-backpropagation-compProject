@@ -35,12 +35,15 @@ public final class NeuralUtil {
 
     public static double xavierInitialise(int fanIn, int fanOut, Random r){
         double limit = Math.sqrt((double) 6 / (fanIn + fanOut));
-        return (r.nextDouble() * 2 - 1) * limit;
+        limit = (r.nextDouble() * 2 - 1) * limit;
+        return limit;
     }
 
     public static double heInitialise(int fanIn, Random r){
         double limit = Math.sqrt((double) 2 / fanIn);
-        return (r.nextGaussian() * 2 - 1) * limit;
+        limit = (r.nextGaussian() * 2 - 1) * limit;
+        return limit;
+
     }
 
     public static double crossEntropy(double[][] yTrue, double[][] yHat){
@@ -133,6 +136,17 @@ public final class NeuralUtil {
         return result;
     }
 
+    public static int getMaxValueIndex(double[] vector){
+        int maxIndex = 0;
+        double maxValue = vector[0];
+        for(int i = 1; i < vector.length; i++){
+            if(vector[i] > maxValue){
+                maxValue = vector[i];
+                maxIndex = i;
+            }
+        }
+        return maxIndex;
+    }
 
     
 }

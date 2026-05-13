@@ -1,9 +1,11 @@
 package com.ann.project;
 
+import java.io.Serializable;
+
 /*
 does not work but was needed for the testing to work
  */
-public class ReLU implements Activation{
+public class ReLU implements Activation, Serializable {
 
     @Override
     public double[][] apply(double[][] Z) {

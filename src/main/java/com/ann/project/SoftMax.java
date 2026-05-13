@@ -1,6 +1,8 @@
 package com.ann.project;
 
-public class SoftMax implements Activation{
+import java.io.Serializable;
+
+public class SoftMax implements Activation, Serializable{
     @Override
     public double[][] apply(double[][] Z) {
     double [][] result = new double[Z.length][Z[0].length];
