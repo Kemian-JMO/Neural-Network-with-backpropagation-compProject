@@ -261,6 +261,7 @@ public class NeuralNetwork implements Serializable{
             System.out.println("Layer: " + layer);
             oos.writeObject(layer);
         }
+        oos.writeObject(null);
         oos.close();
     }
 
@@ -268,8 +269,9 @@ public class NeuralNetwork implements Serializable{
         FileInputStream fis = new FileInputStream(file);
         ObjectInputStream ois = new ObjectInputStream(fis);
         ArrayList<Layer> layers = new ArrayList<>();
-        while (ois.available() == 0) {
-            layers.add((Layer) ois.readObject());
+        Layer layer;
+        while ((layer = (Layer)ois.readObject()) != null) {
+            layers.add(layer);
         }
         ois.close();
         Layer[] network = new Layer[layers.size()];
