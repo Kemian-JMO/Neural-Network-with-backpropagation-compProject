@@ -13,9 +13,9 @@ public final class NeuralUtil {
 //                System.out.println("loop i: " + i + " j: " + j + "MD");
 //                System.out.println("a: " + a.length + "ax" + a[0].length + " b: " + b.length + "bx" + b[0].length);
                 for(int k = 0; k < a[0].length; k++){
-                    if (a[0].length != b.length) {
-                        throw new IllegalArgumentException("Arrays have different lengths");
-                    }
+//                    if (a[0].length != b.length) {
+ //                       throw new IllegalArgumentException("Arrays have different lengths");
+   //                 }
                     result[i][j] += a[i][k] * b[k][j];
                 }
             }
@@ -35,13 +35,13 @@ public final class NeuralUtil {
 
     public static double xavierInitialise(int fanIn, int fanOut, Random r){
         double limit = Math.sqrt((double) 6 / (fanIn + fanOut));
-        limit = (r.nextDouble() * 2 - 1) * limit;
+        limit = r.nextGaussian() * limit;
         return limit;
     }
 
     public static double heInitialise(int fanIn, Random r){
         double limit = Math.sqrt((double) 2 / fanIn);
-        limit = (r.nextGaussian() * 2 - 1) * limit;
+        limit = r.nextGaussian() * limit;
         return limit;
     }
 
