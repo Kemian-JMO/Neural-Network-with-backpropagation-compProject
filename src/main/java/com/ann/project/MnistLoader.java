@@ -49,4 +49,9 @@ public class MnistLoader {
             return labels;
         }
     }
+
+    public double normalize0t1(double pixel){
+        double colour;
+        return colour = pixel / 255;
+    }
 }
