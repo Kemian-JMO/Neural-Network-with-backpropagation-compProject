@@ -4,6 +4,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.OptionalDouble;
 import java.util.Random;
 
 /*
@@ -28,8 +30,8 @@ public class NeuralNetwork implements Serializable{
     private Layer[] network;
     private double[][] trainingData;
     private double[][] trainingLabels;
-    private double[][] testingData;
-    private double[][] testingLabels;
+    private double[][] validationData;
+    private double[][] ValidationLabels;
     // Indexed parallel to network[]; activations[0] is the input layer's activation and unused.
     private double lastTrainingCost;
     private double bestValCost = Double.MAX_VALUE;
@@ -51,13 +53,14 @@ public class NeuralNetwork implements Serializable{
         this.numberOfLayers = hiddenLayers.length + 2;
         this.trainingData = data[0];
         this.trainingLabels = data[1];
-        this.testingData = data[2];
-        this.testingLabels = data[3];
+        this.validationData = data[2];
+        this.ValidationLabels = data[3];
         this.activations = activations;
 
 
         createNetwork();
         populateLayers();
+
 
     }
 
@@ -132,13 +135,17 @@ public class NeuralNetwork implements Serializable{
             System.out.println("training Epoch "+ i);
             long epochTime = System.nanoTime();
             trainBatch();
-            double cost = runInference(testingData, testingLabels);
-            System.out.println("Epoch " + i + " last training cost: " + lastTrainingCost);
-            System.out.println("Epoch " + i + " cost: " + cost);
-            if (isBest(cost)){
-                bestValCost = cost;
+            double loss = runInference(validationData, ValidationLabels);
+            int accuracy;
+            accuracy = getAccuracy(ValidationLabels, network[network.length-1].getA());
+
+            System.out.println("Epoch " + i + " Training loss: " + lastTrainingCost);
+            System.out.println("Epoch Validation accuracy: " + accuracy + "%");
+            System.out.println("Epoch " + i + " Validation loss: " + loss);
+            if (isBest(loss)){
+                bestValCost = loss;
                 bestNetwork = network.clone();
-                System.out.println("Epoch " + i + " is the best." + " \nBest cost: " + cost);
+                System.out.println("Epoch " + i + " is the best." + " \nBest cost: " + loss);
             }
             System.out.println("Epoch "+ i + " time: " + (System.nanoTime() - epochTime)/1000000 +"ms");
         }
@@ -147,25 +154,18 @@ public class NeuralNetwork implements Serializable{
     }
 
     public double train(double[][] batch, double[][] label){
-        //
+        double batchCost;
+        double[][] loss;
+
         populateInputLayer(batch);
-     //
+
         for (int i = 1; i < network.length; i++){
             feedForward(network[i-1], network[i]);
-            for(double[] row : network[i].getA())
-                for(double v : row)
-                    if(Double.isNaN(v)) {
-                        System.out.println("NaN in layer " + i);
-                        throw new IllegalArgumentException ("NaN in layer " + i);
-                    }
         }
 
+        batchCost = NeuralUtil.crossEntropy(label,network[network.length-1].getA());
 
-
-
-        double batchCost = NeuralUtil.crossEntropy(label,network[network.length-1].getA());
-
-        double[][] loss = NeuralUtil.matrixSubtract(label,network[network.length-1].getA());
+        loss = NeuralUtil.matrixSubtract(label,network[network.length-1].getA());
 
         for (int i = network.length - 1; i > 0; i--) {
             loss = backPropagation(network[i], network[i - 1].getA(), loss);
@@ -227,16 +227,47 @@ public class NeuralNetwork implements Serializable{
         layer.setBias(newBias);
     }
 
-    public double runInference(double[][] inferenceData, double[][] inferenceLabels){
-        double cost;
-        int accuracy;
-        cost = train(inferenceData, inferenceLabels);
-        accuracy = getAccuracy(inferenceLabels, network[network.length-1].getA());
+    private double runInference(double[][] inferenceData, double[][] inferenceLabels){
+        double loss;
+        populateInputLayer(inferenceData);
+        for (int i = 1; i < network.length; i++) {
+            feedForward(network[i - 1], network[i]);
+        }
+        loss = NeuralUtil.crossEntropy(inferenceLabels, network[network.length - 1].getA());
+        return loss;
+    }
 
-        System.out.println("Testing cost: " + cost);
-        System.out.println("Testing accuracy: " + accuracy + "%");
+    public void runInferenceSingle(double[][] inferenceData, double[][] inferenceLabels){
+        for (int i = 0; i < inferenceLabels.length; i++) {
 
-        return cost;
+                double loss;
+
+                double[][] singleDate = {inferenceData[i].clone()};
+                double[][] singleLabel = {inferenceLabels[i].clone()};
+                loss = runInference(singleDate, singleLabel);
+
+                double[][] A = network[network.length-1].getA().clone();
+                int lMax = NeuralUtil.getMaxValueIndex(singleLabel[0]);
+                int pMax = NeuralUtil.getMaxValueIndex(A[0]);
+                double[] tMax = Arrays.stream(A[0]).sorted().toArray().clone();
+                OptionalDouble tcon = (Arrays.stream(A[0]).max());
+                double confidence = tcon.getAsDouble() * 100;
+                int secondMax = 0;
+                int thirdMax = 0;
+                for (int j = 0; j < tMax.length; j++) {
+                    if (A[0][j] == tMax[tMax.length-2]){
+                            secondMax += j;
+                    }
+                    if (A[0][j] == tMax[tMax.length-3]){
+                        thirdMax += j;
+                    }
+                }
+                System.out.println("Testing loss: " + loss);
+                System.out.println("Thought it was " + pMax +" with " + (int)confidence + "%"  + " confidence.");
+                System.out.println("the second and third max: " + secondMax + " and " + thirdMax + " respectively.");
+                System.out.println("Correct Label: " + lMax);
+
+        }
     }
 
     private int getAccuracy(double[][] labels, double[][] predictions){
