@@ -145,7 +145,7 @@ public class NeuralNetwork implements Serializable{
             if (isBest(loss)){
                 bestValCost = loss;
                 bestNetwork = network.clone();
-                System.out.println("Epoch " + i + " is the best." + " \nBest cost: " + loss);
+                System.out.println("Epoch " + i + " is the best." + " \nBest Loss: " + loss);
             }
             System.out.println("Epoch "+ i + " time: " + (System.nanoTime() - epochTime)/1000000 +"ms");
         }

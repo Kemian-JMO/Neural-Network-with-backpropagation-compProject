@@ -13,8 +13,9 @@ public class Main {
         double[][][] data = {images, labels, valImages, valLabels};
         System.out.println(images[0].length);
 
-
+        
         Activation RelU = new ReLU();
+        Activation Sigmoid = new Sigmoid();
         Activation SOFTMAX = new SoftMax();
         Activation[] activations = {null, RelU, RelU, RelU, SOFTMAX};
         int[] hiddenLayers = {200,200,200};
