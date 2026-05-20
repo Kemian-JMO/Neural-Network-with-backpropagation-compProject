@@ -1,0 +1,41 @@
+package com.ann.project;
+
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+
+public class FileParsing {
+    private static final String trainingLabelPath = "src/main/resources/com.mnist.training/train-labels.idx1-ubyte";
+    private static final int trainingBatchSize = 60000;
+    private static final int labelMagicNumber = 2049;
+
+    public static void main(String[] args) {
+
+        FileParsing fp = new FileParsing();
+        
+        int[] labels = fp.readLabels(fp.trainingLabelPath, fp.trainingBatchSize);
+
+    }
+
+    public static int[] readLabels(String path, int batchSize){
+        try (DataInputStream labelStream = new DataInputStream(new FileInputStream(path))){
+            int magicNumber = labelStream.readInt();
+            if (magicNumber != labelMagicNumber){
+                throw new IOException("Invalid mnist label file");
+            }
+            int numLabels = labelStream.readInt();
+            int[] labels = new int[Math.min(numLabels, batchSize)];
+            for (int i = 0; i < labels.length; i++) {
+                labels[i] = labelStream.readUnsignedByte();
+            }
+            return labels;
+        }catch (Exception e){
+            e.printStackTrace();
+            System.out.println("Error reading labels");
+            System.out.println(e.getMessage());
+            System.out.println("Returning null");
+            return null;
+        }
+
+    }
+}

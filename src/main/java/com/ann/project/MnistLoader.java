@@ -33,7 +33,7 @@ public class MnistLoader {
         }
     }
 
-    public static int[] loadLabels(String filePath) throws IOException {
+    public static double[][] loadLabels(String filePath) throws IOException {
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(filePath)))) {
             int magicNumber = dis.readInt();
             if (magicNumber != LABEL_MAGIC_NUMBER) {
@@ -41,13 +41,17 @@ public class MnistLoader {
             }
             int numLabels = dis.readInt();
 
-            int[] labels = new int[numLabels];
+            double[][] labels = new double[numLabels][10];
 
             for (int i = 0; i < numLabels; i++) {
-                labels[i] = dis.readUnsignedByte();
+                labels[i][dis.readUnsignedByte()] = 1;
             }
             return labels;
         }
     }
 
+    public double normalize0t1(double pixel){
+        double colour;
+        return colour = pixel / 255;
+    }
 }

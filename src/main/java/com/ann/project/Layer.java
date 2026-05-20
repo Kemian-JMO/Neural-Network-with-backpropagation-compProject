@@ -1,6 +1,8 @@
 package com.ann.project;
 
-public class Layer {
+import java.io.Serializable;
+
+public class Layer implements Serializable {
     private int neurons;
     private double[][] weights;
     private double[][] weightGradients;

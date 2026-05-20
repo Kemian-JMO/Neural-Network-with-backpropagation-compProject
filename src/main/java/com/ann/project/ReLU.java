@@ -1,9 +1,11 @@
 package com.ann.project;
 
+import java.io.Serializable;
+
 /*
 does not work but was needed for the testing to work
  */
-public class ReLU implements Activation{
+public class ReLU implements Activation, Serializable {
 
     @Override
     public double[][] apply(double[][] Z) {
@@ -23,9 +25,9 @@ public class ReLU implements Activation{
         for(int i = 0; i < result.length; i++){
             for(int j = 0; j < result[0].length; j++){
                 double v = Double.isFinite(A[i][j]) ? A[i][j] : 0;
-                A[i][j] = (v > 0) ? 1 : 0;
+                result[i][j] = (v > 0) ? 1 : 0;
             }
         }
-        return A;
+        return result;
     }
 }
