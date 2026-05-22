@@ -20,8 +20,8 @@ public class Main {
         Activation[] activations = {null, RelU, RelU, RelU, SOFTMAX};
         int[] hiddenLayers = {200,200,200};
 
-        NeuralNetwork neuralNetwork = new NeuralNetwork(10,10,30,0.01, activations, hiddenLayers, data);
-        neuralNetwork.trainEpoch();
+        NeuralNetwork neuralNetwork = new NeuralNetwork(10,10,30,0.01, activations, hiddenLayers, data, "network.nn", true);
+        //neuralNetwork.trainEpoch();
 
 
         Imager img = new Imager();
