@@ -3,10 +3,7 @@ package com.ann.project;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.OptionalDouble;
-import java.util.Random;
+import java.util.*;
 
 /*
 We can write about how and why our neural network differs from the 4 graph types as the neural network looks a lot like a graph
@@ -36,7 +33,9 @@ public class NeuralNetwork implements Serializable{
     private double lastTrainingCost;
     private double bestValCost = Double.MAX_VALUE;
     private Layer[] bestNetwork;
-    private String filename = "network.nn";
+    private String filename;
+    private boolean save;
+
     /*
     The neural network is set up, now we need to begin to make the training logic
 
@@ -44,7 +43,7 @@ public class NeuralNetwork implements Serializable{
 
 
 
-    public NeuralNetwork(int seed, int epochs, int batchSize, double learningRate, Activation[] activations, int[] hiddenLayers, double[][][] data) {
+    public NeuralNetwork(int seed, int epochs, int batchSize, double learningRate, Activation[] activations, int[] hiddenLayers, double[][][] data, String filename, boolean save) {
         random = new Random(seed);
         this.epochs = epochs;
         this.batchSize = batchSize;
@@ -56,6 +55,8 @@ public class NeuralNetwork implements Serializable{
         this.validationData = data[2];
         this.ValidationLabels = data[3];
         this.activations = activations;
+        this.filename = filename;
+        this.save = save;
 
 
         createNetwork();
@@ -116,11 +117,17 @@ public class NeuralNetwork implements Serializable{
     }
 
     public void trainBatch(){
-        for (int i = 0; i < trainingData.length/batchSize; i++) {
+        int indexLength = trainingData.length;
+        int[] indices = new int[indexLength];
+        for (int i = 0; i < indexLength; i++) {
+            indices[i] = i;
+        }
+        Collections.shuffle(Arrays.asList(indices), random);
+        for (int i = 0; i < indexLength / batchSize; i++) {
             double[][] batch = new double[batchSize][trainingData[0].length];
-            double[][] label = new double[batchSize][trainingLabels.length];
+            double[][] label = new double[batchSize][trainingLabels[0].length];
             for (int j = 0; j < batchSize; j++) {
-                int index = i*batchSize+j;
+                int index = indices[i*batchSize+j];
                 batch[j] = trainingData[index].clone();
                 label[j] = trainingLabels[index].clone();
             }
@@ -129,7 +136,7 @@ public class NeuralNetwork implements Serializable{
         }
     }
 
-    public void trainEpoch() throws IOException {
+    public void trainEpoch(EpochListener listener) throws IOException {
         long totalTime = System.nanoTime();
         for (int i = 1; i < epochs+1; i++) {
             System.out.println("training Epoch "+ i);
@@ -139,18 +146,25 @@ public class NeuralNetwork implements Serializable{
             int accuracy;
             accuracy = getAccuracy(ValidationLabels, network[network.length-1].getA());
 
+            if (listener != null) {
+                listener.onEpoch(i, lastTrainingCost, loss, accuracy);
+            }
+
             System.out.println("Epoch " + i + " Training loss: " + lastTrainingCost);
             System.out.println("Epoch Validation accuracy: " + accuracy + "%");
             System.out.println("Epoch " + i + " Validation loss: " + loss);
-            if (isBest(loss)){
+
+            if (isBest(loss) && save){
                 bestValCost = loss;
                 bestNetwork = network.clone();
                 System.out.println("Epoch " + i + " is the best." + " \nBest Loss: " + loss);
+                if (bestNetwork != null) saveNetwork(bestNetwork, "best_" + filename);
+
             }
             System.out.println("Epoch "+ i + " time: " + (System.nanoTime() - epochTime)/1000000 +"ms");
         }
         System.out.println("Total time: " + (System.nanoTime() - totalTime)/1000000 +"ms");
-        saveNetwork(bestNetwork, filename);
+        if (save && network != null) saveNetwork(network.clone(), "latest_" + filename);
     }
 
     public double train(double[][] batch, double[][] label){
