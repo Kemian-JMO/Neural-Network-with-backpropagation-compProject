@@ -1,7 +1,6 @@
 package com.ann.project;
 
 import javax.imageio.*;
-import javax.swing.*;
 import java.awt.image.*;
 import java.io.*;
 import java.awt.*;
