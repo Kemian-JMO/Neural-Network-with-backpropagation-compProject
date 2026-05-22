@@ -25,29 +25,35 @@ public class Charts extends Application {
 
     @Override
     public void start(Stage stage){
-        int seedCount = 10;
+        int seedCount = 5;
 
         NumberAxis valLossX = new NumberAxis();
         valLossX.setLabel("Epoch");
+        valLossX.setTickUnit(1);
         NumberAxis valLossY = new NumberAxis();
+        valLossY.setTickUnit(0.025);
         valLossY.setLabel("Loss");
         LineChart<Number, Number> valLossChart = new LineChart<>(valLossX, valLossY);
         valLossChart.setTitle("Validation loss");
 
         NumberAxis traLossX = new NumberAxis();
-        valLossX.setLabel("Epoch");
+        traLossX.setLabel("Epoch");
+        traLossX.setTickUnit(1);
         NumberAxis traLossY = new NumberAxis();
-        valLossY.setLabel("Loss");
+        traLossY.setTickUnit(0.025);
+        traLossY.setLabel("Loss");
         LineChart<Number, Number> traLossChart = new LineChart<>(traLossX, traLossY);
-        valLossChart.setTitle("Training loss");
+        traLossChart.setTitle("Training loss");
 
         NumberAxis accX = new NumberAxis();
         accX.setLabel("Epoch");
-        NumberAxis accY = new NumberAxis();
+        accX.setTickUnit(1);
+        NumberAxis accY = new NumberAxis(0,100,1);
         accY.setLabel("Accuracy %");
         LineChart<Number, Number> accChart = new LineChart<>(accX, accY);
         accChart.setTitle("Accuracy");
-
+        accY.setForceZeroInRange(false);
+        accY.setUpperBound(100);
 
         List<XYChart.Series<Number, Number>> valLossList = new ArrayList<>();
         List<XYChart.Series<Number, Number>> accList = new ArrayList<>();
@@ -84,9 +90,13 @@ public class Charts extends Application {
             resultBox.getChildren().add(lv);
         }
 
+        resultBox.setMaxHeight(100);
+        finalResultsView.setMaxHeight(100);
+
+
         HBox.setHgrow(valLossChart, Priority.ALWAYS);
         HBox.setHgrow(traLossChart, Priority.ALWAYS);
-        stage.setScene(new Scene(new VBox( new HBox(valLossChart, traLossChart), accChart, resultBox,finalResultsView), 1200, 900));
+        stage.setScene(new Scene(new VBox( new HBox(traLossChart, valLossChart), accChart, resultBox,finalResultsView), 1200, 900));
         stage.setTitle("Neural Network Training");
         stage.show();
 
@@ -113,25 +123,27 @@ public class Charts extends Application {
                 /*
 
                 testing model with.
-                single hidden layer: 280
-                triple hidden layer: 28, 28, 28
-                triple hidden layer: 280, 280, 280
-                triple hidden layer: 280, 280, 280 sigmoid
-                triple hidden layer descending: 350, 100, 28
+                single hidden layer: 280 ReLU
+                triple hidden layer: 28, 28, 28 ReLU
+                triple hidden layer: 250, 250, 250 ReLU
+                triple hidden layer: 28, 28, 28 sigmoid
+                triple hidden layer descending: 392, 198, 98 ReLU
+                triple hidden layer: epoch 30 ReLU
+
 
 
 
                  */
 
-                int[] hiddenLayers = {300,300,300};
-                Activation[] activations = {null, new ReLU(),new ReLU(),new ReLU(), new SoftMax()};
+                int[] hiddenLayers = {392, 196, 98};
+                Activation[] activations = {null, new ReLU(), new ReLU(), new ReLU(), new SoftMax()};
 
                 for (int s = 0; s < seedCount; s++) {
                     final int seed = s;
                     pool.submit(() -> {
                         try {
                             NeuralNetwork nn = new NeuralNetwork(
-                                    seed, 30, 30, 0.01, activations, hiddenLayers, data, "seed" + seed + ".jClass", false);
+                                    seed, 10, 30, 0.01, activations, hiddenLayers, data, "seed" + seed + ".jClass", false);
                             nn.trainEpoch((epoch, tLoss, vLoss, acc) -> {
                                 finalTrainLoss[seed] = tLoss;
                                 finalValLoss[seed]   = vLoss;
