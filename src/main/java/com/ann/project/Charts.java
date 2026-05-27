@@ -126,7 +126,7 @@ public class Charts extends Application {
                 single hidden layer: 280 ReLU
                 triple hidden layer: 28, 28, 28 ReLU
                 triple hidden layer: 250, 250, 250 ReLU
-                triple hidden layer: 28, 28, 28 sigmoid
+                triple hidden layer: 28, 28, 28 Sigmoid
                 triple hidden layer descending: 392, 198, 98 ReLU
                 triple hidden layer: epoch 30 ReLU
 
@@ -135,7 +135,7 @@ public class Charts extends Application {
 
                  */
 
-                int[] hiddenLayers = {392, 196, 98};
+                int[] hiddenLayers = {100,100,100};
                 Activation[] activations = {null, new ReLU(), new ReLU(), new ReLU(), new SoftMax()};
 
                 for (int s = 0; s < seedCount; s++) {
