@@ -17,10 +17,10 @@ public class Main {
         Activation RelU = new ReLU();
         Activation Sigmoid = new Sigmoid();
         Activation SOFTMAX = new SoftMax();
-        Activation[] activations = {null, RelU, RelU, RelU, SOFTMAX};
-        int[] hiddenLayers = {250,250,250};
+        Activation[] activations = {null, RelU, SOFTMAX};
+        int[] hiddenLayers = {28};
         String best= "Models/best_";
-        String name = "L3_N250-250-250_E10_AReLU_Lr0.01.nn";
+        String name = "L1_S28_E10_AReLU_Lr0.01.nn";
 
         NeuralNetwork neuralNetwork = new NeuralNetwork(10,10,30,0.01, activations, hiddenLayers, data, name, true);
         neuralNetwork.trainEpoch((EpochListener) (epoch, trainLoss, valLoss, accuracy) -> {});
